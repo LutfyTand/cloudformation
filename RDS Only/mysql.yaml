@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: RDS MySQL instance.
 Parameters:
     DatabaseName:
-      Default: "catalyst"
+      Default: "MyDatabase"
       Description: The database name (Default "catalyst", change if you are creating more than one database)
       Type: String
 
@@ -39,7 +39,7 @@ Parameters:
         Type: String
     
     DatabaseUsername:
-        Default: "catalyst"
+        Default: "admin"
         AllowedPattern: "[a-zA-Z0-9]+"
         ConstraintDescription: must contain only alphanumeric characters. Must have length 1-16
         Description: The database admin account user name. (Default "catalyst")

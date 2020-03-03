@@ -1,0 +1,127 @@
+---
+    AWSTemplateFormatVersion: '2010-09-09'
+    Description: 'RDS MySQL instance.'
+    Parameters:
+      VpcId:
+        Type: String
+        Description: VpcId of your existing Virtual Private Cloud (VPC)
+      Subnets:
+        Type: CommaDelimitedList
+        Description: The list of SubnetIds, for at least two Availability Zones in the
+          region in your Virtual Private Cloud (VPC)
+      DBName:
+        Default: MyDatabase
+        Description: The database name
+        Type: String
+        MinLength: '1'
+        MaxLength: '64'
+        AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+        ConstraintDescription: must begin with a letter and contain only alphanumeric
+          characters.
+      DBUsername:
+        Default: admin
+        NoEcho: 'true'
+        Description: The database admin account username
+        Type: String
+        MinLength: '1'
+        MaxLength: '16'
+        AllowedPattern: "[a-zA-Z][a-zA-Z0-9]*"
+        ConstraintDescription: must begin with a letter and contain only alphanumeric
+          characters.
+      DBPassword:
+        Default: adminZX12
+        NoEcho: 'true'
+        Description: The database admin account password
+        Type: String
+        MinLength: '1'
+        MaxLength: '41'
+        AllowedPattern: "[a-zA-Z0-9]*"
+        ConstraintDescription: must contain only alphanumeric characters.
+      DBClass:
+        Default: db.t2.micro
+        Description: Database instance class
+        Type: String
+        AllowedValues:
+            - db.t2.micro
+            - db.t2.small
+            - db.t2.medium
+            - db.t2.large
+            - db.t2.xlarge
+            - db.t2.2xlarge
+            - db.r4.large
+            - db.r4.xlarge
+            - db.r4.2xlarge
+            - db.r4.4xlarge
+            - db.r4.8xlarge
+            - db.r4.16xlarge
+            - db.m4.large
+            - db.m4.2xlarge
+            - db.m4.4xlarge
+            - db.m4.10xlarge
+            - db.m4.16xlarge
+        ConstraintDescription: must select a valid database instance type.
+      DBAllocatedStorage:
+        Default: '20'
+        Description: The size of the database (Gb)
+        Type: Number
+        MinValue: '5'
+        MaxValue: '1024'
+        ConstraintDescription: must be between 5 and 1024Gb.
+    Resources:
+      MyDBSubnetGroup:
+        Type: AWS::RDS::DBSubnetGroup
+        Properties:
+          DBSubnetGroupDescription: Subnets available for the RDS DB Instance
+          SubnetIds:
+            Ref: Subnets
+      myVPCSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties: 
+            VpcId: !Ref VpcId
+            GroupDescription: Access to database
+            SecurityGroupIngress:
+                - CidrIp: 0.0.0.0/0
+                  FromPort: 3306
+                  ToPort: 3306
+                  IpProtocol: tcp
+            Tags: 
+                - Key: Name
+                  Value: !Sub ${DBName}-security-group
+      MyDB:
+        Type: AWS::RDS::DBInstance
+        Properties:
+          DBName:
+            Ref: DBName
+          AllocatedStorage:
+            Ref: DBAllocatedStorage
+          DBInstanceClass:
+            Ref: DBClass
+          Engine: MySQL
+          EngineVersion: 5.7.19
+          MasterUsername:
+            Ref: DBUsername
+          MasterUserPassword:
+            Ref: DBPassword
+          DBSubnetGroupName:
+            Ref: MyDBSubnetGroup
+          VPCSecurityGroups:
+          - Ref: myVPCSecurityGroup
+          PubliclyAccessible: "true"
+          DBInstanceIdentifier: !Ref DBName
+    Outputs:
+      JDBCConnectionString:
+        Description: JDBC connection string for database
+        Value:
+          Fn::Join:
+          - ''
+          - - jdbc:mysql://
+            - Fn::GetAtt:
+              - MyDB
+              - Endpoint.Address
+            - ":"
+            - Fn::GetAtt:
+              - MyDB
+              - Endpoint.Port
+            - "/"
+            - Ref: DBName
+    
